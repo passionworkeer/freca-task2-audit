@@ -87,19 +87,40 @@ def run_verify_audit_unit(
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
     # Step 1 — one-shot base judgment (all CPs in one call, like CASE_FULL).
-    base = run_execution(
-        unit=unit,
-        material=material,
-        client=client,
-        artifact_dir=artifact_dir / "base",
-    )
-    if not base.valid or not base.verdicts:
-        atomic_write_json(artifact_dir / "result.json", base.model_dump(mode="json"))
-        return [base]
+    base_result_path = artifact_dir / "result.json"
+    base_existing = None
+    if base_result_path.exists():
+        try:
+            base_existing = ExecutionResult.model_validate_json(base_result_path.read_text(encoding="utf-8"))
+        except Exception:
+            base_existing = None
+    if base_existing is not None and base_existing.valid and base_existing.verdicts:
+        base = base_existing
+    else:
+        base = run_execution(
+            unit=unit,
+            material=material,
+            client=client,
+            artifact_dir=artifact_dir / "base",
+        )
+        if not base.valid or not base.verdicts:
+            atomic_write_json(base_result_path, base.model_dump(mode="json"))
+            return [base]
 
     # Step 2 — unconditional verifier pass on every CP.
     per_cp_results: list[ExecutionResult] = []
     for cp_index, base_verdict in enumerate(base.verdicts):
+        cp_dir = artifact_dir / f"verify-cp-{cp_index:03d}"
+        cp_result_path = cp_dir / "result.json"
+        # Skip already-valid per-CP result so resume-after-kill only runs missing.
+        if cp_result_path.exists():
+            try:
+                existing_cp = ExecutionResult.model_validate_json(cp_result_path.read_text(encoding="utf-8"))
+                if existing_cp.valid and existing_cp.verdicts:
+                    per_cp_results.append(existing_cp)
+                    continue
+            except Exception:
+                pass
         # build_agent_prompt assumes one CP per unit, so build a per-CP view.
         cp_unit = ExecutionUnit(
             case_id=unit.case_id,
@@ -111,7 +132,7 @@ def run_verify_audit_unit(
             material=material,
             unit=cp_unit,
             current=base_verdict,
-            artifact_dir=artifact_dir / f"verify-cp-{cp_index:03d}",
+            artifact_dir=cp_dir,
             reason="unconditional verify (always review)",
         )
 
@@ -152,7 +173,7 @@ def run_verify_audit_unit(
         # lost once the run exits. Mirrors how stage_audit / agent_audit write
         # one result.json per CP.
         atomic_write_json(
-            artifact_dir / f"verify-cp-{cp_index:03d}" / "result.json",
+            cp_dir / "result.json",
             per_cp_results[-1].model_dump(mode="json"),
         )
 
