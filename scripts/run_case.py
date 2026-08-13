@@ -87,6 +87,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--inter-call-delay", type=float, default=1.5)
     parser.add_argument("--model", default="MiniMax-M3")
     parser.add_argument("--uncertainty-threshold", type=float, default=0.5)
+    parser.add_argument(
+        "--max-cps",
+        type=int,
+        default=None,
+        help="cap plan-runner methods (stage/agent_audit) to N missing cp per invocation "
+        "(None=unlimited); use to keep a run under the 10-min shell cap so it stays foreground",
+    )
     args = parser.parse_args(argv)
 
     env_file = find_env_file()
@@ -136,6 +143,8 @@ def main(argv: list[str] | None = None) -> int:
             ran = 0
             valid = 0
             for original_idx in missing:
+                if args.max_cps is not None and ran >= args.max_cps:
+                    break
                 unit = plan.units[original_idx]
                 unit_dir = case_dir / f"cp-{original_idx:03d}"
                 kwargs: dict = {
