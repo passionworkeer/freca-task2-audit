@@ -1,5 +1,7 @@
 # FRECA Task 2 — Compliance Audit Pipeline
 
+> **归档日期：2026-09-21。** 本项目停止主动维护，作为 FRECA Task 2 的比赛方案、实现与实验记录公开保留。原始比赛数据未包含在仓库中；历史结果需结合当时的数据、模型配置与评测口径理解。第三方材料继续遵循其原有许可与使用条件。
+
 > 主线架构 + 模块职责见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。可视化流转图:[`architecture.html`](architecture.html)(用浏览器打开)。
 >
 > 检索 / Agent / 消融 / 产物 schema 的实现细节: [`docs/RETRIEVAL.md`](docs/RETRIEVAL.md)、[`docs/AGENT_RETRIEVAL.md`](docs/AGENT_RETRIEVAL.md)、[`docs/ABLATION.md`](docs/ABLATION.md)、[`docs/ARTIFACT_SCHEMA.md`](docs/ARTIFACT_SCHEMA.md)、[`docs/SIGNATURE_CONTAMINATION.md`](docs/SIGNATURE_CONTAMINATION.md)。
